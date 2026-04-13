@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ViewDaFile</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- PDF.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-left">
+      <button id="openBtn">Open</button>
+      <button id="closeBtn">Close</button>
+    </div>
+    <div class="nav-center">
+      <span id="filename">no file open</span>
+    </div>
+    <div class="nav-right">
+      <div id="zoom-controls">
+        <button id="zoomOutBtn">−</button>
+        <span id="zoomLevel">100%</span>
+        <button id="zoomInBtn">+</button>
+        <button id="zoomFitBtn">Fit</button>
+      </div>
+      <span id="pageinfo"></span>
+    </div>
+  </nav>
+
+  <main id="viewport">
+    <!-- Empty state: drop hint + recently opened tiles -->
+    <div id="empty-state">
+      <div id="drop-hint">
+        <p>Drop a PDF here</p>
+        <p>or click <strong>Open</strong></p>
+      </div>
+      <div id="recent-section">
+        <p class="recent-label">Recent</p>
+        <div id="recent-tiles"></div>
+      </div>
+    </div>
+
+    <!-- Continuous-scroll page container, shown when a PDF is loaded -->
+    <div id="pages-container"></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

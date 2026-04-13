@@ -1,0 +1,9 @@
+# Tauri / Rust build output (can be gigabytes)
+src-tauri/target/
+
+# Claude Code session memory (local only)
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

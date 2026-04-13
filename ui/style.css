@@ -1,0 +1,287 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:       #141414;
+  --bar-bg:   #1f1f1f;
+  --border:   #2e2e2e;
+  --text:     #d4d4d4;
+  --muted:    #666;
+  --accent:   #3a3a3a;
+  --hover:    #484848;
+  --bar-h:    44px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Top bar ──────────────────────────────────── */
+.topbar {
+  height: var(--bar-h);
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nav-left  {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+.nav-center {
+  flex: 1 1 auto;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-size: 13px;
+}
+.nav-right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Shared button style for topbar buttons */
+.topbar button {
+  background: var(--accent);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.topbar button:hover  { background: var(--hover); }
+.topbar button:active { background: #555; }
+
+#closeBtn { display: none; }
+
+/* ── Zoom controls ────────────────────────────── */
+#zoom-controls {
+  display: none;   /* flex when a PDF is loaded */
+  align-items: center;
+  gap: 4px;
+}
+
+#zoom-controls button {
+  background: var(--accent);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 26px;
+  height: 22px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#zoom-controls button:hover  { background: var(--hover); }
+#zoom-controls button:active { background: #555; }
+
+#zoomLevel {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 40px;
+  text-align: center;
+  user-select: none;
+}
+
+#pageinfo {
+  color: var(--muted);
+  font-size: 12px;
+  min-width: 72px;
+  text-align: right;
+  user-select: none;
+}
+
+/* ── Main viewport ────────────────────────────── */
+#viewport {
+  height: calc(100vh - var(--bar-h));
+  overflow-y: auto;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Drag-over highlight */
+#viewport.drag-over {
+  outline: 2px dashed #555;
+  outline-offset: -8px;
+}
+
+/* ── Empty state ──────────────────────────────── */
+#empty-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 48px 48px;
+}
+
+#drop-hint {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--muted);
+  text-align: center;
+  pointer-events: none;
+  line-height: 2.2;
+}
+#drop-hint strong { color: var(--text); }
+
+/* ── Recent tiles ─────────────────────────────── */
+#recent-section {
+  display: none;  /* shown by JS when there are recent files */
+}
+
+.recent-label {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+#recent-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.recent-tile {
+  background: var(--bar-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 20px 18px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  overflow: hidden;
+  user-select: none;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.recent-tile:hover {
+  background: var(--accent);
+  border-color: var(--hover);
+}
+
+.recent-tile-icon {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.recent-tile-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6px;
+  flex: 1;
+}
+
+.recent-tile-meta {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+/* ── Pages container ──────────────────────────── */
+#pages-container {
+  display: none;   /* flex when a PDF is loaded */
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 24px 48px;
+  gap: 16px;
+}
+
+/* Individual page wrapper — relative so layers can stack inside */
+.page-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+}
+
+.page-wrapper canvas {
+  display: block;
+  background: #fff;
+}
+
+/* ── Text layer (PDF.js) ──────────────────────── */
+.textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  /* Allow text selection; overrides body user-select:none */
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+  z-index: 2;
+}
+
+/* PDF.js populates these spans with absolute positioning + inline transforms */
+.textLayer span,
+.textLayer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.textLayer ::selection {
+  background: rgba(0, 120, 255, 0.28);
+  color: transparent;
+}
+
+/* ── Link annotations ─────────────────────────── */
+/* Appended inside .textLayer so they sit above text spans (z-index 3) */
+.link-annotation {
+  position: absolute;
+  z-index: 3;
+  cursor: pointer;
+  box-sizing: border-box;
+  border-radius: 2px;
+}
+.link-annotation:hover {
+  background: rgba(0, 120, 255, 0.12);
+  outline: 1px solid rgba(0, 120, 255, 0.35);
+}
