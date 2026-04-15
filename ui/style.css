@@ -76,7 +76,23 @@ html, body {
 .topbar button:hover  { background: var(--hover); }
 .topbar button:active { background: #555; }
 
-#closeBtn { display: none; }
+#closeBtn  { display: none; }
+#printBtn  {
+  display: none;
+  background: var(--accent);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 26px;
+  height: 22px;
+  cursor: pointer;
+  transition: background 0.15s;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+#printBtn:hover  { background: var(--hover); }
+#printBtn:active { background: #555; }
 
 /* ── Zoom controls ────────────────────────────── */
 #zoom-controls {
@@ -419,4 +435,33 @@ html, body {
 .link-annotation:hover {
   background: rgba(0, 120, 255, 0.12);
   outline: 1px solid rgba(0, 120, 255, 0.35);
+}
+
+/* ── Print ────────────────────────────────────── */
+@media print {
+  .topbar, #find-bar, #stickguy, #egg-toast, #empty-state { display: none !important; }
+
+  html, body { overflow: visible; height: auto; background: #fff; }
+
+  #viewport {
+    height: auto;
+    overflow: visible;
+    display: block;
+  }
+
+  #pages-container {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    gap: 0;
+  }
+
+  .page-wrapper {
+    page-break-after: always;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .page-wrapper canvas { display: block; }
 }

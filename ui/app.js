@@ -23,6 +23,7 @@ let findIdx     = -1;
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const openBtn        = document.getElementById('openBtn');
 const closeBtn       = document.getElementById('closeBtn');
+const printBtn       = document.getElementById('printBtn');
 const filenameEl     = document.getElementById('filename');
 const pageinfoEl     = document.getElementById('pageinfo');
 const viewport       = document.getElementById('viewport');
@@ -128,6 +129,7 @@ async function loadFromPath(filePath) {
     emptyState.style.display     = 'none';
     pagesContainer.style.display = 'flex';
     closeBtn.style.display       = 'inline-block';
+    printBtn.style.display       = 'flex';
     zoomControls.style.display   = 'flex';
 
     await renderAllPages();
@@ -152,6 +154,7 @@ function closeFile() {
   pagesContainer.style.display = 'none';
   emptyState.style.display     = '';
   closeBtn.style.display       = 'none';
+  printBtn.style.display       = 'none';
   zoomControls.style.display   = 'none';
   filenameEl.textContent       = 'no file open';
   pageInputEl.value            = '';
@@ -365,6 +368,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === '0')                  { e.preventDefault(); zoomTo(1.0); }
   else if (e.key === 'w' && pdfDoc)        { e.preventDefault(); closeFile(); }
   else if (e.key === 'f' && pdfDoc)        { e.preventDefault(); openFind(); }
+  else if (e.key === 'p' && pdfDoc)        { e.preventDefault(); window.print(); }
 });
 
 // ── Open / Close ──────────────────────────────────────────────────────────────
@@ -374,6 +378,7 @@ openBtn.addEventListener('click', async () => {
 });
 
 closeBtn.addEventListener('click', closeFile);
+printBtn.addEventListener('click', () => window.print());
 
 // ── Drag and drop ─────────────────────────────────────────────────────────────
 listen('tauri://drag-drop', async event => {
@@ -537,6 +542,11 @@ findInput.addEventListener('keydown', e => {
 findPrevBtn.addEventListener('click', prevMatch);
 findNextBtn.addEventListener('click', nextMatch);
 findCloseBtn.addEventListener('click', closeFind);
+
+// ── Context menu ─────────────────────────────────────────────────────────────
+// Suppress the WebView2 built-in context menu — its Share item opens an empty
+// Windows share sheet and then freezes the app.
+document.addEventListener('contextmenu', e => e.preventDefault());
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderRecentTiles();
