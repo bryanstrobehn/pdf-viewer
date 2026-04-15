@@ -35,6 +35,8 @@ html, body {
   padding: 0 12px;
   gap: 12px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 200;
 }
 
 .nav-left  {
@@ -110,11 +112,36 @@ html, body {
 }
 
 #pageinfo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 72px;
+  user-select: none;
+}
+
+#page-input {
+  background: none;
+  border: none;
   color: var(--muted);
   font-size: 12px;
-  min-width: 72px;
+  font-family: inherit;
   text-align: right;
-  user-select: none;
+  padding: 0;
+  width: 2ch;
+  cursor: pointer;
+  user-select: text;
+}
+#page-input:focus {
+  outline: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text);
+  cursor: text;
+}
+
+#page-total {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 /* ── Main viewport ────────────────────────────── */
@@ -271,6 +298,114 @@ html, body {
   background: rgba(0, 120, 255, 0.28);
   color: transparent;
 }
+
+/* ── Stick guy easter egg ────────────────────── */
+#stickguy {
+  position: fixed;
+  width: 28px;
+  height: 46px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  z-index: 9998;
+}
+#stickguy.visible { opacity: 1; }
+
+@keyframes egg-arm-wave {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-55deg); }
+  55%  { transform: rotate(20deg); }
+  80%  { transform: rotate(-40deg); }
+  100% { transform: rotate(0deg); }
+}
+.egg-wave-arm {
+  transform-origin: 14px 17px;
+}
+
+/* ── Easter egg toast ────────────────────────── */
+#egg-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--bar-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+  z-index: 9999;
+}
+#egg-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Find bar ────────────────────────────────── */
+#find-bar {
+  position: fixed;
+  top: var(--bar-h);
+  right: 0;
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 150;
+  transform: translateY(-100%);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+#find-bar.open {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#find-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 3px 7px;
+  width: 200px;
+  outline: none;
+}
+#find-input:focus { border-color: #555; }
+#find-count {
+  color: var(--muted);
+  font-size: 11px;
+  min-width: 56px;
+  text-align: center;
+}
+#find-bar button {
+  background: var(--accent);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  padding: 0;
+}
+#find-bar button:hover  { background: var(--hover); }
+#find-bar button:active { background: #555; }
+#find-close { font-size: 11px; }
+
+/* ── Text search highlights ───────────────────── */
+.text-highlight        { background: rgba(255, 200, 0, 0.35); border-radius: 2px; }
+.text-highlight-active { background: rgba(255, 140, 0, 0.65); border-radius: 2px; }
 
 /* ── Link annotations ─────────────────────────── */
 /* Appended inside .textLayer so they sit above text spans (z-index 3) */

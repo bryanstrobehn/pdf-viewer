@@ -17,6 +17,9 @@ const ZOOM_STEP  = 0.15;
 const ZOOM_MIN   = 0.25;
 const ZOOM_MAX   = 5.0;
 
+let findMatches = [];
+let findIdx     = -1;
+
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const openBtn        = document.getElementById('openBtn');
 const closeBtn       = document.getElementById('closeBtn');
@@ -32,6 +35,14 @@ const zoomFitBtn     = document.getElementById('zoomFitBtn');
 const zoomLevelEl    = document.getElementById('zoomLevel');
 const recentTilesEl  = document.getElementById('recent-tiles');
 const recentSection  = document.getElementById('recent-section');
+const pageInputEl    = document.getElementById('page-input');
+const pageTotalEl    = document.getElementById('page-total');
+const findBar        = document.getElementById('find-bar');
+const findInput      = document.getElementById('find-input');
+const findCount      = document.getElementById('find-count');
+const findPrevBtn    = document.getElementById('find-prev');
+const findNextBtn    = document.getElementById('find-next');
+const findCloseBtn   = document.getElementById('find-close');
 
 // Tauri window handle for title bar updates
 const tauriWindow = window.__TAURI__?.window?.getCurrentWindow?.();
@@ -48,6 +59,7 @@ function saveToRecent(path, name, author = '', modified = null) {
   if (recent.length > MAX_RECENT) recent = recent.slice(0, MAX_RECENT);
   localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
 }
+
 
 function esc(str) {
   return String(str)
@@ -90,6 +102,8 @@ function renderRecentTiles() {
 
 // ── Load PDF ─────────────────────────────────────────────────────────────────
 async function loadFromPath(filePath) {
+  clearFind();
+  eggHide();
   try {
     const bytes = await invoke('read_pdf_file', { path: filePath });
     const uint8 = new Uint8Array(bytes);
@@ -98,6 +112,7 @@ async function loadFromPath(filePath) {
     pdfDoc = doc;
     scale  = 1.0;
     updateZoomDisplay();
+    pageInputEl.style.width = String(doc.numPages).length + 'ch';
 
     const name = filePath.replace(/\\/g, '/').split('/').pop();
     filenameEl.textContent = name;
@@ -126,6 +141,8 @@ async function loadFromPath(filePath) {
 
 // ── Close file ────────────────────────────────────────────────────────────────
 function closeFile() {
+  closeFind();
+
   renderGen++;   // cancel any in-flight render
   pdfDoc = null;
   scale  = 1.0;
@@ -137,7 +154,8 @@ function closeFile() {
   closeBtn.style.display       = 'none';
   zoomControls.style.display   = 'none';
   filenameEl.textContent       = 'no file open';
-  pageinfoEl.textContent       = '';
+  pageInputEl.value            = '';
+  pageTotalEl.textContent      = '';
   tauriWindow?.setTitle('ViewDaFile');
   renderRecentTiles();
 }
@@ -279,10 +297,24 @@ function getVisiblePage() {
 
 function updatePageInfo() {
   if (!pdfDoc) return;
-  pageinfoEl.textContent = `${getVisiblePage()} / ${pdfDoc.numPages}`;
+  pageInputEl.value       = getVisiblePage();
+  pageTotalEl.textContent = ` / ${pdfDoc.numPages}`;
 }
 
 viewport.addEventListener('scroll', updatePageInfo, { passive: true });
+
+// ── Page jump input ───────────────────────────────────────────────────────────
+pageInputEl.addEventListener('focus', () => pageInputEl.select());
+pageInputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter')  { e.preventDefault(); pageInputEl.blur(); }
+  if (e.key === 'Escape') { pageInputEl.value = getVisiblePage(); pageInputEl.blur(); }
+});
+pageInputEl.addEventListener('blur', () => {
+  if (!pdfDoc) return;
+  const n = parseInt(pageInputEl.value, 10);
+  if (!isNaN(n) && n >= 1 && n <= pdfDoc.numPages) scrollToPage(n);
+  else pageInputEl.value = getVisiblePage();
+});
 
 // ── Zoom ──────────────────────────────────────────────────────────────────────
 function updateZoomDisplay() {
@@ -311,22 +343,28 @@ zoomFitBtn.addEventListener('click', async () => {
   zoomTo(availW / baseVp.width);
 });
 
-// Ctrl + mouse wheel zoom (standard Windows pattern)
+// Ctrl + mouse wheel / trackpad pinch zoom
 viewport.addEventListener('wheel', e => {
   if (!e.ctrlKey) return;
   e.preventDefault();
-  // Each notch is typically deltaY = ±100 (Windows) or ±120
-  const delta = e.deltaY < 0 ? 0.1 : -0.1;
-  zoomTo(scale + delta);
+  // Mouse wheels produce large discrete deltaY (±100–120); trackpad pinch
+  // produces small continuous values (±1–10). Scale proportionally so both
+  // feel natural — clamp mouse notches to avoid overshooting.
+  const delta = -e.deltaY * 0.003;
+  zoomTo(scale + Math.max(-0.15, Math.min(0.15, delta)));
 }, { passive: false });
 
-// Ctrl +/-/0 keyboard shortcuts, Ctrl+W to close
+// Keyboard shortcuts
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && findBar.classList.contains('open')) {
+    e.preventDefault(); closeFind(); return;
+  }
   if (!e.ctrlKey) return;
   if      (e.key === '+' || e.key === '=') { e.preventDefault(); zoomTo(scale + ZOOM_STEP); }
   else if (e.key === '-')                  { e.preventDefault(); zoomTo(scale - ZOOM_STEP); }
   else if (e.key === '0')                  { e.preventDefault(); zoomTo(1.0); }
   else if (e.key === 'w' && pdfDoc)        { e.preventDefault(); closeFile(); }
+  else if (e.key === 'f' && pdfDoc)        { e.preventDefault(); openFind(); }
 });
 
 // ── Open / Close ──────────────────────────────────────────────────────────────
@@ -357,5 +395,151 @@ window.addEventListener('resize', () => {
   }, 150);
 });
 
+// ── Easter egg: sneaky stick figure ──────────────────────────────────────────
+const AGGRO_R     = 72;   // px — how close before he bolts
+const EGG_MAX     = 3;    // number of escapes before payoff
+const BR_ZONE     = 160;  // px from bottom-right edge that wakes him up
+
+let eggRuns     = 0;
+let eggVisible  = false;
+let eggCooldown = false;
+let eggTimer    = null;
+
+const eggEl    = document.getElementById('stickguy');
+const eggToast = document.getElementById('egg-toast');
+
+function eggShow(x, y) {
+  eggEl.style.left = x + 'px';
+  eggEl.style.top  = y + 'px';
+  // Restart the wave animation each time he spawns
+  const arm = eggEl.querySelector('.egg-wave-arm');
+  arm.style.animation = 'none';
+  void arm.offsetWidth; // force reflow so the reset takes
+  arm.style.animation = 'egg-arm-wave 0.55s ease-in-out 2';
+  eggEl.classList.add('visible');
+  eggVisible = true;
+}
+
+function eggHide() {
+  eggEl.classList.remove('visible');
+  eggVisible = false;
+}
+
+function eggSpawnRandom() {
+  const pad = 70;
+  const x = pad + Math.random() * (window.innerWidth  - pad * 2 - 28);
+  const y = pad + Math.random() * (window.innerHeight - pad * 2 - 46);
+  setTimeout(() => { eggCooldown = false; eggShow(x, y); }, 500 + Math.random() * 500);
+}
+
+function eggPayoff() {
+  eggToast.textContent = 'Thanks for using my thing!';
+  eggToast.classList.add('show');
+  clearTimeout(eggTimer);
+  eggTimer = setTimeout(() => eggToast.classList.remove('show'), 3500);
+}
+
+document.addEventListener('mousemove', e => {
+  if (pdfDoc) return;  // home screen only
+
+  // Wake him up when cursor drifts into bottom-right zone
+  if (!eggVisible && !eggCooldown && eggRuns === 0) {
+    const nearRight  = e.clientX > window.innerWidth  - BR_ZONE;
+    const nearBottom = e.clientY > window.innerHeight - BR_ZONE;
+    if (nearRight && nearBottom) {
+      const x = window.innerWidth  - 44 - Math.random() * 30;
+      const y = window.innerHeight - 62 - Math.random() * 20;
+      eggShow(x, y);
+    }
+  }
+
+  if (!eggVisible) return;
+
+  // Check aggro range
+  const rect = eggEl.getBoundingClientRect();
+  const cx   = rect.left + rect.width  / 2;
+  const cy   = rect.top  + rect.height / 2;
+  if (Math.hypot(e.clientX - cx, e.clientY - cy) < AGGRO_R) {
+    eggHide();
+    eggCooldown = true;
+    eggRuns++;
+    if (eggRuns >= EGG_MAX) {
+      setTimeout(eggPayoff, 300);
+    } else {
+      eggSpawnRandom();
+    }
+  }
+});
+
+// ── Find in document ──────────────────────────────────────────────────────────
+function clearFind() {
+  pagesContainer.querySelectorAll('.text-highlight, .text-highlight-active')
+    .forEach(el => el.classList.remove('text-highlight', 'text-highlight-active'));
+  findMatches = [];
+  findIdx     = -1;
+  findCount.textContent = '';
+}
+
+function openFind() {
+  findBar.classList.add('open');
+  findInput.focus();
+  findInput.select();
+}
+
+function closeFind() {
+  findBar.classList.remove('open');
+  clearFind();
+}
+
+function runFind() {
+  clearFind();
+  const q = findInput.value.trim().toLowerCase();
+  if (!q || !pdfDoc) return;
+
+  pagesContainer.querySelectorAll('.textLayer span').forEach(span => {
+    if (span.textContent.toLowerCase().includes(q)) {
+      span.classList.add('text-highlight');
+      findMatches.push(span);
+    }
+  });
+
+  if (findMatches.length === 0) { findCount.textContent = 'No results'; return; }
+  findIdx = 0;
+  activateMatch(0);
+}
+
+function activateMatch(i) {
+  pagesContainer.querySelectorAll('.text-highlight-active')
+    .forEach(el => el.classList.remove('text-highlight-active'));
+  const el = findMatches[i];
+  if (!el) return;
+  el.classList.add('text-highlight-active');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  findCount.textContent = `${i + 1} / ${findMatches.length}`;
+}
+
+function nextMatch() {
+  if (!findMatches.length) { runFind(); return; }
+  findIdx = (findIdx + 1) % findMatches.length;
+  activateMatch(findIdx);
+}
+
+function prevMatch() {
+  if (!findMatches.length) return;
+  findIdx = (findIdx - 1 + findMatches.length) % findMatches.length;
+  activateMatch(findIdx);
+}
+
+findInput.addEventListener('input', runFind);
+findInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? prevMatch() : nextMatch(); }
+});
+findPrevBtn.addEventListener('click', prevMatch);
+findNextBtn.addEventListener('click', nextMatch);
+findCloseBtn.addEventListener('click', closeFind);
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderRecentTiles();
+
+// Open file passed via double-click / file association (Windows shell arg)
+invoke('get_launch_file').then(path => { if (path) loadFromPath(path); });

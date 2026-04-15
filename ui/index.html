@@ -25,7 +25,7 @@
         <button id="zoomInBtn">+</button>
         <button id="zoomFitBtn">Fit</button>
       </div>
-      <span id="pageinfo"></span>
+      <span id="pageinfo"><input id="page-input" type="text" spellcheck="false"><span id="page-total"></span></span>
     </div>
   </nav>
 
@@ -46,6 +46,35 @@
     <div id="pages-container"></div>
   </main>
 
+  <div id="find-bar">
+    <input id="find-input" type="text" placeholder="Find in document…" spellcheck="false">
+    <span id="find-count"></span>
+    <button id="find-prev" title="Previous (Shift+Enter)">↑</button>
+    <button id="find-next" title="Next (Enter)">↓</button>
+    <button id="find-close">✕</button>
+  </div>
+
+  <div id="stickguy">
+    <svg width="28" height="46" viewBox="0 0 28 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- head -->
+      <circle cx="14" cy="7" r="5.5" stroke="#d4d4d4" stroke-width="1.5"/>
+      <!-- deal-with-it glasses: two lenses + bridge -->
+      <rect x="7"  y="4.5" width="5" height="3.5" rx="0.5" fill="#d4d4d4"/>
+      <rect x="16" y="4.5" width="5" height="3.5" rx="0.5" fill="#d4d4d4"/>
+      <line x1="12" y1="6.2" x2="16" y2="6.2" stroke="#d4d4d4" stroke-width="1.2"/>
+      <!-- body -->
+      <line x1="14" y1="12.5" x2="14" y2="28" stroke="#d4d4d4" stroke-width="1.5"/>
+      <!-- arms — right arm wrapped for wave animation -->
+      <line x1="14" y1="17" x2="5"  y2="23" stroke="#d4d4d4" stroke-width="1.5"/>
+      <g class="egg-wave-arm">
+        <line x1="14" y1="17" x2="23" y2="23" stroke="#d4d4d4" stroke-width="1.5"/>
+      </g>
+      <!-- legs -->
+      <line x1="14" y1="28" x2="7"  y2="42" stroke="#d4d4d4" stroke-width="1.5"/>
+      <line x1="14" y1="28" x2="21" y2="42" stroke="#d4d4d4" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <div id="egg-toast"></div>
   <script src="app.js"></script>
 </body>
 </html>

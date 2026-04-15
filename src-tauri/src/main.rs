@@ -33,6 +33,16 @@ fn get_file_modified(path: String) -> Result<u64, String> {
     Ok(secs)
 }
 
+/// Returns the first CLI argument that looks like a PDF path (i.e. the file
+/// Windows passes when the app is launched via double-click / file association).
+#[command]
+fn get_launch_file() -> Option<String> {
+    std::env::args().nth(1).filter(|a| {
+        let lower = a.to_lowercase();
+        lower.ends_with(".pdf") && std::path::Path::new(a).is_file()
+    })
+}
+
 /// Opens an http/https URL in the default system browser.
 /// Uses `cmd /C start` on Windows, which hands off to the OS shell.
 #[command]
@@ -52,7 +62,7 @@ fn open_url(url: String) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![open_pdf_dialog, read_pdf_file, open_url, get_file_modified])
+        .invoke_handler(tauri::generate_handler![open_pdf_dialog, read_pdf_file, open_url, get_file_modified, get_launch_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
