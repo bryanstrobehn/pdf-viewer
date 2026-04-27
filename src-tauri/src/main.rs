@@ -3,6 +3,38 @@
 
 use tauri::command;
 
+/// Opens the Chromium print preview dialog via WebView2's COM API.
+/// This is equivalent to window.print() but called from Rust, which gives us
+/// a path to add more control later (e.g. direct-to-printer with settings).
+#[cfg(target_os = "windows")]
+fn do_webview2_print(
+    controller: webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Controller,
+) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        ICoreWebView2_16, COREWEBVIEW2_PRINT_DIALOG_KIND_BROWSER,
+    };
+    use windows::core::Interface;
+
+    let _ = unsafe {
+        (|| -> windows::core::Result<()> {
+            let webview = controller.CoreWebView2()?;
+            let webview16: ICoreWebView2_16 = webview.cast()?;
+            webview16.ShowPrintUI(COREWEBVIEW2_PRINT_DIALOG_KIND_BROWSER)?;
+            Ok(())
+        })()
+    };
+}
+
+#[command]
+fn print_pdf(webview_window: tauri::WebviewWindow) -> Result<(), String> {
+    webview_window
+        .with_webview(|wv| {
+            #[cfg(target_os = "windows")]
+            do_webview2_print(wv.controller());
+        })
+        .map_err(|e| e.to_string())
+}
+
 /// Opens a native file-picker filtered to PDFs and returns the chosen path.
 #[command]
 fn open_pdf_dialog(app: tauri::AppHandle) -> Option<String> {
@@ -62,7 +94,7 @@ fn open_url(url: String) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![open_pdf_dialog, read_pdf_file, open_url, get_file_modified, get_launch_file])
+        .invoke_handler(tauri::generate_handler![open_pdf_dialog, read_pdf_file, open_url, get_file_modified, get_launch_file, print_pdf])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

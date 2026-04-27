@@ -201,14 +201,20 @@ async function renderPageInto(wrapper, num, gen) {
   if (gen !== renderGen) return;
 
   const vp = page.getViewport({ scale });
+  // Render canvas at print-correct resolution (96 CSS px/in ÷ 72 PDF pt/in).
+  // The canvas CSS size is overridden to screenVp so screen layout is unchanged.
+  // In @media print, width:auto reverts to the natural pixel size = correct physical dimensions.
+  const printVp = page.getViewport({ scale: scale * 96 / 72 });
 
   // Build wrapper size and child elements
   wrapper.style.width  = vp.width  + 'px';
   wrapper.style.height = vp.height + 'px';
 
-  const canvas    = document.createElement('canvas');
-  canvas.width    = vp.width;
-  canvas.height   = vp.height;
+  const canvas       = document.createElement('canvas');
+  canvas.width       = printVp.width;
+  canvas.height      = printVp.height;
+  canvas.style.width  = vp.width  + 'px';
+  canvas.style.height = vp.height + 'px';
 
   const textLayer = document.createElement('div');
   textLayer.className = 'textLayer';
@@ -217,7 +223,7 @@ async function renderPageInto(wrapper, num, gen) {
   wrapper.appendChild(textLayer);
 
   // Render canvas pixels (awaited — this is the heavy work)
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: printVp }).promise;
   if (gen !== renderGen) return;
 
   // Text layer — fire and forget so the main loop keeps moving
@@ -368,7 +374,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === '0')                  { e.preventDefault(); zoomTo(1.0); }
   else if (e.key === 'w' && pdfDoc)        { e.preventDefault(); closeFile(); }
   else if (e.key === 'f' && pdfDoc)        { e.preventDefault(); openFind(); }
-  else if (e.key === 'p' && pdfDoc)        { e.preventDefault(); window.print(); }
+  else if (e.key === 'p' && pdfDoc)        { e.preventDefault(); invoke('print_pdf').catch(console.error); }
 });
 
 // ── Open / Close ──────────────────────────────────────────────────────────────
@@ -378,7 +384,7 @@ openBtn.addEventListener('click', async () => {
 });
 
 closeBtn.addEventListener('click', closeFile);
-printBtn.addEventListener('click', () => window.print());
+printBtn.addEventListener('click', () => invoke('print_pdf').catch(console.error));
 
 // ── Drag and drop ─────────────────────────────────────────────────────────────
 listen('tauri://drag-drop', async event => {
